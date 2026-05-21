@@ -9,14 +9,14 @@ on:
         type: string
         default: arm_cortex-a7_neon-vfpv4
       branch:
-        description: OpenWrt 分支（23.05-SNAPSHOT -> openwrt-23.05）
+        description: OpenWrt SDK 版本（23.05-SNAPSHOT 请选 23.05.6）
         type: choice
         options:
-          - openwrt-23.05
+          - 23.05.6
           - openwrt-24.10
           - openwrt-25.12
           - SNAPSHOT
-        default: openwrt-23.05
+        default: 23.05.6
       build_all:
         description: 编译全部架构矩阵（取消勾选则仅编译上方 arch/branch）
         type: boolean
@@ -79,7 +79,7 @@ jobs:
           - i386_pentium4
           - x86_64
         branch:
-          - openwrt-23.05
+          - 23.05.6
           - openwrt-24.10
           - openwrt-25.12
           - SNAPSHOT

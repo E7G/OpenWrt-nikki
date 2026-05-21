@@ -22,7 +22,7 @@ case "$DISTRIB_RELEASE" in
 		branch="openwrt-25.12"
 		;;
 	*"23.05"*)
-		branch="openwrt-23.05"
+		branch="23.05.6"
 		;;
 	"SNAPSHOT")
 		branch="SNAPSHOT"

@@ -11,14 +11,14 @@ on:
         default: arm_cortex-a7_neon-vfpv4
       branch:
         description: >-
-          OpenWrt 分支（23.05-SNAPSHOT 对应 openwrt-23.05）。
+          OpenWrt SDK 版本（路由器 23.05-SNAPSHOT 请选 23.05.6，勿选 openwrt-23.05）。
         type: choice
         options:
-          - openwrt-23.05
+          - 23.05.6
           - openwrt-24.10
           - openwrt-25.12
           - SNAPSHOT
-        default: openwrt-23.05
+        default: 23.05.6
       release_tag:
         description: GitHub Release 标签名（仅单目标手动发布时使用）
         type: string
@@ -115,7 +115,7 @@ jobs:
           - i386_pentium4
           - x86_64
         branch:
-          - openwrt-23.05
+          - 23.05.6
           - openwrt-24.10
           - openwrt-25.12
           - SNAPSHOT
