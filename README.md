@@ -8,7 +8,7 @@ Transparent Proxy with Mihomo on OpenWrt.
 
 ## Prerequisites
 
-- OpenWrt >= 24.10
+- OpenWrt >= 23.05
 - Linux Kernel >= 5.13
 - firewall4
 
@@ -96,7 +96,7 @@ The package files will be found under `bin/packages/your_architecture/nikki`.
 - kmod-nft-socket
 - kmod-nft-tproxy
 - kmod-tun
-- kmod-dummy
+- kmod-dummy (optional, only when using IPv6 fake-ip without kernel `CONFIG_DUMMY` built-in)
 
 ## Contributors
 

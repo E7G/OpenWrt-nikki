@@ -8,7 +8,7 @@
 
 ## 环境要求
 
-- OpenWrt >= 24.10
+- OpenWrt >= 23.05
 - Linux Kernel >= 5.13
 - firewall4
 
@@ -96,7 +96,7 @@ make package/luci-app-nikki/compile
 - kmod-nft-socket
 - kmod-nft-tproxy
 - kmod-tun
-- kmod-dummy
+- kmod-dummy（可选，仅在使用 IPv6 fake-ip 且内核未内置 dummy 时需要）
 
 ## 贡献者
 

@@ -2,12 +2,87 @@ name: release-packages
 
 on:
   workflow_dispatch:
+    inputs:
+      arch:
+        description: >-
+          DISTRIB_ARCH（路由器执行: . /etc/openwrt_release; echo $DISTRIB_ARCH）。
+          ipq50xx/ipq50xx_32 + armv7l 常见为 arm_cortex-a7_neon-vfpv4，请先确认。
+        type: string
+        default: arm_cortex-a7_neon-vfpv4
+      branch:
+        description: >-
+          OpenWrt 分支（23.05-SNAPSHOT 对应 openwrt-23.05）。
+        type: choice
+        options:
+          - openwrt-23.05
+          - openwrt-24.10
+          - openwrt-25.12
+          - SNAPSHOT
+        default: openwrt-23.05
+      release_tag:
+        description: GitHub Release 标签名（仅单目标手动发布时使用）
+        type: string
+        default: ipq50xx_32-23.05-SNAPSHOT
+      prerelease:
+        description: 标记为预发布版本
+        type: boolean
+        default: true
+      build_all:
+        description: 编译并发布全部架构矩阵（取消勾选则仅编译上方 arch/branch）
+        type: boolean
+        default: false
   push:
     tags:
       - v*
 
 jobs:
+  release-single:
+    if: github.event_name == 'workflow_dispatch' && inputs.build_all != true
+    name: ${{ inputs.arch }}-${{ inputs.branch }} release
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: checkout
+        uses: actions/checkout@v6
+
+      - name: build
+        uses: openwrt/gh-action-sdk@main
+        env:
+          ARCH: ${{ inputs.arch }}-${{ inputs.branch }}
+          FEEDNAME: nikki
+          PACKAGES: mihomo-alpha mihomo-meta nikki luci-app-nikki
+          INDEX: 1
+          KEY_BUILD: ${{ secrets.KEY_BUILD }}
+          PRIVATE_KEY: ${{ secrets.PRIVATE_KEY }}
+          NO_REFRESH_CHECK: true
+
+      - name: compress
+        run: |
+          tar -c -z -f nikki_${{ inputs.arch }}-${{ inputs.branch }}.tar.gz -C bin/packages/${{ inputs.arch }}/nikki .
+          mkdir -p release-ipk
+          cp bin/packages/${{ inputs.arch }}/nikki/*.ipk release-ipk/
+
+      - name: release
+        uses: softprops/action-gh-release@v3
+        with:
+          tag_name: ${{ inputs.release_tag }}
+          name: ${{ inputs.release_tag }} (${{ inputs.arch }}-${{ inputs.branch }})
+          prerelease: ${{ inputs.prerelease }}
+          generate_release_notes: true
+          files: |
+            nikki_${{ inputs.arch }}-${{ inputs.branch }}.tar.gz
+            release-ipk/*
+
+      - name: upload
+        uses: actions/upload-artifact@v7
+        with:
+          name: nikki_${{ inputs.arch }}-${{ inputs.branch }}
+          path: |
+            nikki_${{ inputs.arch }}-${{ inputs.branch }}.tar.gz
+            release-ipk
+
   release:
+    if: github.event_name == 'push' || (github.event_name == 'workflow_dispatch' && inputs.build_all == true)
     name: ${{ matrix.arch }}-${{ matrix.branch }} release
     runs-on: ubuntu-latest
     continue-on-error: true
@@ -40,6 +115,7 @@ jobs:
           - i386_pentium4
           - x86_64
         branch:
+          - openwrt-23.05
           - openwrt-24.10
           - openwrt-25.12
           - SNAPSHOT
@@ -78,11 +154,18 @@ jobs:
           tar -c -z -f feed_nikki_${{ matrix.arch }}-${{ matrix.branch }}.tar.gz public/${{ matrix.branch }}/${{ matrix.arch }}
 
       - if: github.event_name == 'push' && startsWith(github.ref_name, 'v')
+        name: prepare ipk assets
+        run: |
+          mkdir -p release-ipk
+          cp bin/packages/${{ matrix.arch }}/nikki/*.ipk release-ipk/
+
+      - if: github.event_name == 'push' && startsWith(github.ref_name, 'v')
         name: release
         uses: softprops/action-gh-release@v3
         with:
           files: |
             nikki_${{ matrix.arch }}-${{ matrix.branch }}.tar.gz
+            release-ipk/*
 
       - name: upload
         uses: actions/upload-artifact@v7
@@ -92,6 +175,7 @@ jobs:
 
   feed:
     needs: release
+    if: github.event_name == 'push' || (github.event_name == 'workflow_dispatch' && inputs.build_all == true)
     name: feed
     runs-on: ubuntu-latest
 
@@ -101,11 +185,11 @@ jobs:
         with:
           pattern: feed_nikki_*
           merge-multiple: true
-      
+
       - name: uncompress
         run: |
           for file in feed_nikki_*.tar.gz; do tar -x -z -f "$file"; done
-      
+
       - name: prepare
         run: |
           echo "${{ secrets.KEY_BUILD_PUB }}" > public/key-build.pub

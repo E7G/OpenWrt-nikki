@@ -406,9 +406,18 @@ service_started() {
 			$FIREWALL_INCLUDE_SH
 		fi
 		if [ "$dns_mode" = "fake-ip" ] && [ -n "$fake_ip6_range" ]; then
-			ip link add "$dummy_device" type dummy
-			ip link set dev "$dummy_device" up
-			ip -6 route add "$fake_ip6_range" dev "$dummy_device"
+			if ! ip link show "$dummy_device" > /dev/null 2>&1; then
+				if ! ip link add "$dummy_device" type dummy 2>/dev/null; then
+					modprobe dummy > /dev/null 2>&1
+					ip link add "$dummy_device" type dummy 2>/dev/null
+				fi
+			fi
+			if ip link show "$dummy_device" > /dev/null 2>&1; then
+				ip link set dev "$dummy_device" up
+				ip -6 route add "$fake_ip6_range" dev "$dummy_device" 2>/dev/null || log "Proxy" "Failed to add IPv6 fake-ip route on $dummy_device."
+			else
+				log "Proxy" "Dummy device unavailable (install kmod-dummy or enable CONFIG_DUMMY). IPv6 fake-ip routing skipped."
+			fi
 		fi
 		# hijack
 		utpl -S "$HIJACK_UT" | nft -f -
